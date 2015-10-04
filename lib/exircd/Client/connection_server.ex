@@ -39,7 +39,6 @@ defmodule ExIRCd.Client.ConnServer do
   end
 
   def handle_info({:shutdown}, {handler, sup, conn}) do
-    # Register the connection with the superserver
     Process.exit(sup, :normal)
     {:noreply, {handler, sup, conn}}
   end
