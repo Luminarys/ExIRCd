@@ -29,7 +29,8 @@ defmodule ExIRCd.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:reagent, "~> 0.1.5"}
+      {:reagent, "~> 0.1.5"},
+      {:inch_ex, only: :docs},
     ]
   end
 end

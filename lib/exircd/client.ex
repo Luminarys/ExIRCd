@@ -20,11 +20,19 @@ defmodule ExIRCd.ConnSuperSup do
     Supervisor.start_link(__MODULE__, :ok, opts)
   end
 
+  @doc """
+  Spawns a new connection supervisor. This is called by the Reagent Acceptor
+  which passes the acceptor pid, and the connection.
+  """
   def start_connection(acceptor, conn) do
     Logger.log :debug, "Connection Super Supervisor starting a Connection Supervisor"
     Supervisor.start_child(ExIRCd.ConnSuperSup, [acceptor, conn])
   end
 
+  @doc """
+  Terminates and removes a connection supervisor. This should be called after
+  a client disconnects or is forcibly disconnected from the server
+  """
   def close_connection(conn_sup) do
     Supervisor.terminate_child ExIRCd.ConnSuperSup, conn_sup
     Supervisor.delete_child ExIRCd.ConnSuperSup, conn_sup

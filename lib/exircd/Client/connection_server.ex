@@ -19,28 +19,33 @@ defmodule ExIRCd.Client.ConnServer do
     {:ok, {acceptor, sup, conn}}
   end
 
+  def handle_cast({:recv, message}, {sup, handler}) do
+    GenServer.cast(handler, {:send, message})
+    {:noreply, {sup, handler}}
+  end
+
   import Supervisor.Spec
 
   def handle_info({:start_handler}, {acceptor, sup, conn}) do
     Logger.log :debug, "Connection server spawning connection handler supervisor!"
     handler = supervisor(ExIRCd.Client.ConnHandlerSup, [acceptor, conn, self()], restart: :transient)
     Supervisor.start_child(sup, handler)
-    {:noreply, {acceptor, sup, conn}}
+    {:noreply, {sup, conn}}
   end
 
-  def handle_info({:link, handler}, {_acceptor, sup, conn}) do
+  def handle_info({:link, handler}, {sup, _conn}) do
     Logger.log :debug, "Connection server received link from handler"
     send self(), {:register}
-    {:noreply, {handler, sup, conn}}
+    {:noreply, {sup, handler}}
   end
 
-  def handle_info({:register}, {handler, sup, conn}) do
+  def handle_info({:register}, {sup, handler}) do
     # Register the connection with the superserver
-    {:noreply, {handler, sup, conn}}
+    {:noreply, {sup, handler}}
   end
 
-  def handle_info({:socket_closed}, {handler, sup, conn}) do
+  def handle_info({:socket_closed}, {sup, handler}) do
     ExIRCd.ConnSuperSup.close_connection sup
-    {:noreply, {handler, sup, conn}}
+    {:noreply, {sup, handler}}
   end
 end
