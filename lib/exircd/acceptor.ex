@@ -1,4 +1,8 @@
 defmodule ExIRCd.Acceptor do
+  @moduledoc """
+  Accepts connections from clients, spawns a connection supervisor, and then passes info to it.
+  It then listens for a response from a connection handler.
+  """
   use Reagent.Behaviour
 
   def start(conn) do
@@ -10,10 +14,4 @@ defmodule ExIRCd.Acceptor do
         {:ok, pid}
     end
   end
-end
-
-defmodule ExIRCd.AcceptorSup do
-  @moduledoc """
-  Supervises the socket acceptor process, ensuring that it stays up.
-  """
 end
