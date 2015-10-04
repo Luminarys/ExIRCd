@@ -1,6 +1,6 @@
 # ExIRCd
 
-** A distrbuted, fault tolerant IRC server built with Elixir**
+**A distrbuted, fault tolerant IRC server built with Elixir**
 
 ## Information
 This project is currently under development, more info to come soon.
