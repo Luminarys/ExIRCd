@@ -1,5 +1,6 @@
 # ExIRCd
 
+[![Inline docs](http://inch-ci.org/github/Luminarys/ExIRCd.svg)](http://inch-ci.org/github/Luminarys/ExIRCd)
 **A distrbuted, fault tolerant IRC server built with Elixir**
 
 ## Information
