@@ -1,4 +1,5 @@
 defmodule ExIRCd.Acceptor do
+  require Logger
   @moduledoc """
   Accepts connections from clients, spawns a connection supervisor, and then passes info to it.
   It then listens for a response from a connection handler.
@@ -6,11 +7,11 @@ defmodule ExIRCd.Acceptor do
   use Reagent.Behaviour
 
   def start(conn) do
-    IO.puts "Passing self and connection to ConnSuperSup"
+    Logger.log :debug, "Acceptor received new client connection. Adding new connection supervisor to the connection super supervisor"
     ExIRCd.ConnSuperSup.start_connection(self(), conn)       
     receive do
       pid -> 
-        IO.puts "Acceptor received PID!"
+        Logger.log :debug, "Acceptor received PID!"
         {:ok, pid}
     end
   end

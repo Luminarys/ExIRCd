@@ -2,6 +2,7 @@ defmodule ExIRCd.Client do
 end
 
 defmodule ExIRCd.ConnSuperSup do
+  require Logger
   @moduledoc """
   Connection Super Supervisor. This supervisor uses simple_one_for_one
   to create Connection Supervisor children which each manage their own
@@ -20,8 +21,13 @@ defmodule ExIRCd.ConnSuperSup do
   end
 
   def start_connection(acceptor, conn) do
-    IO.puts "Starting a Connection Supervisor"
-    IO.inspect Supervisor.start_child(ExIRCd.ConnSuperSup, [acceptor, conn])
+    Logger.log :debug, "Connection Super Supervisor starting a Connection Supervisor"
+    Supervisor.start_child(ExIRCd.ConnSuperSup, [acceptor, conn])
+  end
+
+  def close_connection(conn_sup) do
+    Supervisor.terminate_child ExIRCd.ConnSuperSup, conn_sup
+    Supervisor.delete_child ExIRCd.ConnSuperSup, conn_sup
   end
 
   def init(_opts) do

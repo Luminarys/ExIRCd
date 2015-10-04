@@ -5,6 +5,7 @@ defmodule ExIRCd.SuperServer.Server do
   if they want to either alter the server state or be sent to other
   clients.
   """
+  require Logger
   use GenServer
   
   def start_link(state, opts \\ []) do

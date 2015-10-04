@@ -2,6 +2,7 @@ defmodule ExIRCd.SuperServer do
 end
 
 defmodule ExIRCd.SuperServerSup do
+  require Logger
   @moduledoc """
   Launches and supervises the super server, ensuring that it stays up.
   """

@@ -6,10 +6,11 @@ defmodule ExIRCd.Client.ConnServer do
   It is created from the connection supervisor and given the acceptor pid, the connection, the 
   connection supervisor pid, and the super server pid.
   """
+  require Logger
   use GenServer
 
   def start_link(acceptor, sup, conn) do
-    IO.puts "Connection server started!"
+    Logger.log :debug, "Connection server started!"
     GenServer.start_link __MODULE__, [acceptor, sup, conn]
   end
 
@@ -21,14 +22,14 @@ defmodule ExIRCd.Client.ConnServer do
   import Supervisor.Spec
 
   def handle_info({:start_handler}, {acceptor, sup, conn}) do
-    IO.puts "Connection server performing ConnHandlerSup init!"
+    Logger.log :debug, "Connection server spawning connection handler supervisor!"
     handler = supervisor(ExIRCd.Client.ConnHandlerSup, [acceptor, conn, self()], restart: :transient)
     Supervisor.start_child(sup, handler)
     {:noreply, {acceptor, sup, conn}}
   end
 
   def handle_info({:link, handler}, {_acceptor, sup, conn}) do
-    IO.puts "Connection server received link from handler"
+    Logger.log :debug, "Connection server received link from handler"
     send self(), {:register}
     {:noreply, {handler, sup, conn}}
   end
@@ -38,9 +39,8 @@ defmodule ExIRCd.Client.ConnServer do
     {:noreply, {handler, sup, conn}}
   end
 
-  def handle_info({:shutdown}, {handler, sup, conn}) do
-    Process.exit(sup, :normal)
+  def handle_info({:socket_closed}, {handler, sup, conn}) do
+    ExIRCd.ConnSuperSup.close_connection sup
     {:noreply, {handler, sup, conn}}
   end
 end
-

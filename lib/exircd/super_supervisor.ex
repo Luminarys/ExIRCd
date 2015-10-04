@@ -8,6 +8,7 @@ defmodule ExIRCd.SuperSup do
 
   If any one of these three supervisors ends up dying, the entire server will be restarted.
   """
+  require Logger
   use Supervisor
   def start_link(opts \\ []) do
     Supervisor.start_link(__MODULE__, opts)

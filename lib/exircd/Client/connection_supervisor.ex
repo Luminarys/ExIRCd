@@ -12,6 +12,7 @@ defmodule ExIRCd.Client.ConnSup do
   handler supervisor using the connection, acceptor pid, and connection server pid.
   """
   use Supervisor
+  require Logger
 
   def start_link(acceptor, conn) do
     Supervisor.start_link(__MODULE__, [acceptor, conn])
@@ -22,10 +23,9 @@ defmodule ExIRCd.Client.ConnSup do
   end
 
   def init([acceptor, conn]) do
-    IO.puts "New conn sup initialized!"
+    Logger.log :debug, "New Connection Supervisor created!"
     children = [
       worker(ExIRCd.Client.ConnServer, [acceptor, self(), conn], restart: :transient),
-      # supervisor(ExIRCd.Client.ConnHandlerSup, [], restart: :permanent)
     ]
 
     supervise(children, strategy: :one_for_one)

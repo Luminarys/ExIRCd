@@ -8,6 +8,7 @@ defmodule ExIRCd.Client.ConnHandlerSup do
   The child spawned will be given the connection, the acceptor pid, and the connection
   server pid.
   """
+  require Logger
   use Supervisor
   
   def start_link(acceptor, connection, server) do
@@ -15,9 +16,9 @@ defmodule ExIRCd.Client.ConnHandlerSup do
   end
 
   def init([acceptor, connection, server]) do
-    IO.puts "New connection handler supervisor started!"
+    Logger.log :debug, "New connection handler supervisor started!"
     children = [
-      supervisor(ExIRCd.Client.ConnHandler, [acceptor, connection, server], restart: :permanent)
+      supervisor(ExIRCd.Client.ConnHandler, [acceptor, connection, server], restart: :transient)
     ]
 
     supervise(children, strategy: :one_for_one)
@@ -31,21 +32,20 @@ defmodule ExIRCd.Client.ConnHandler do
   send a message to the connection server informing it of its pid so that a proper link
   may be established between the handler and server
   """
+  require Logger
+
   def start_link(acceptor, connection, server) do
     GenServer.start_link(__MODULE__, [acceptor, connection, server])
   end
 
   def init([acceptor, connection, server]) do
     send self(), {:ready}
-    IO.puts "Connection handler succesfully initialized!"
     {:ok, {acceptor, connection, server}}
   end
 
   def handle_info({:ready}, {acceptor, connection, server}) do
-    IO.puts "Connection handler sending registration to acceptor!"
+    Logger.log :debug, "Connection handler sending registration to acceptor and connection server"
     send acceptor, self()
-    IO.puts "Connection handler sending registration to server!"
-    IO.inspect server
     send server, {:link, self()}
     {:noreply, {connection, server}}
   end
@@ -62,8 +62,7 @@ defmodule ExIRCd.Client.ConnHandler do
   end
 
   def handle_info({ :tcp_closed, _ }, {connection, server}) do
-    send server, {:shutdown}
+    send server, {:socket_closed}
     { :noreply, {connection, server}}
   end
-
 end
