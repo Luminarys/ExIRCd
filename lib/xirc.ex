@@ -1,2 +1,0 @@
-defmodule Xirc do
-end

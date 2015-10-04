@@ -1,6 +1,6 @@
-defmodule XircTest do
+defmodule ExIRCdTest do
   use ExUnit.Case
-  doctest Xirc
+  doctest ExIRCd
 
   test "the truth" do
     assert 1 + 1 == 2

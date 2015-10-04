@@ -1,8 +1,8 @@
-defmodule Xirc.Mixfile do
+defmodule ExIRCd.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :xirc,
+    [app: :exircd,
      version: "0.0.1",
      elixir: "~> 1.1",
      build_embedded: Mix.env == :prod,
@@ -14,7 +14,8 @@ defmodule Xirc.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger]]
+    [applications: [:logger],
+    mod: {ExIRCd, []}]
   end
 
   # Dependencies can be Hex packages:
@@ -27,6 +28,8 @@ defmodule Xirc.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    []
+    [
+      {:reagent, "~> 0.1.5"}
+    ]
   end
 end

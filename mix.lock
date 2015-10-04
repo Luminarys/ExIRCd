@@ -1,0 +1,3 @@
+%{"exts": {:hex, :exts, "0.2.2"},
+  "reagent": {:hex, :reagent, "0.1.5"},
+  "socket": {:hex, :socket, "0.2.8"}}
