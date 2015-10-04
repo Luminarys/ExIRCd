@@ -1,6 +1,8 @@
 # ExIRCd
 
+[![Build Status](https://travis-ci.org/Luminarys/ExIRCd.svg?branch=master)](https://travis-ci.org/Luminarys/ExIRCd)
 [![Inline docs](http://inch-ci.org/github/Luminarys/ExIRCd.svg)](http://inch-ci.org/github/Luminarys/ExIRCd)
+
 **A distrbuted, fault tolerant IRC server built with Elixir**
 
 ## Information
