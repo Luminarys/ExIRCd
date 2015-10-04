@@ -1,19 +1,17 @@
-# Xirc
+# ExIRCd
 
-**TODO: Add description**
+** A distrbuted, fault tolerant IRC server built with Elixir**
 
-## Installation
+## Information
+This project is currently under development, more info to come soon.
+If you'd like to contribute, read the docs, and see the
+design specification image.
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
+## Current Status
+The architecture is in place, and right now connections are just echo servers.
+This will be changed soon.
 
-  1. Add xirc to your list of dependencies in `mix.exs`:
-
-        def deps do
-          [{:xirc, "~> 0.0.1"}]
-        end
-
-  2. Ensure xirc is started before your application:
-
-        def application do
-          [applications: [:xirc]]
-        end
+## TODO
+* Implement the Super Server properly
+* Get basic IRC commands up
+* Implement Ecto and PSQL
