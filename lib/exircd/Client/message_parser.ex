@@ -55,6 +55,13 @@ defmodule ExIRCd.Client.MessageParser do
   @doc """
   Converts an IRC message into a string to be sent to a client.
   """
+  def parse_message_to_raw(%Message{prefix: "", command: command, args: arg_list, trailing: trailing}) do
+    # host = "ExIRCd@localhost"
+    case trailing do
+      "" -> "#{command} #{Enum.join(arg_list, " ")}\r\n"
+      _ -> "#{command} #{Enum.join(arg_list, " ")} :#{trailing}\r\n"
+    end
+  end
   def parse_message_to_raw(%Message{prefix: prefix, command: command, args: arg_list, trailing: trailing}) do
     # host = "ExIRCd@localhost"
     case trailing do

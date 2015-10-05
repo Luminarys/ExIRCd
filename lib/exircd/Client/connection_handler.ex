@@ -17,6 +17,15 @@ defmodule ExIRCd.Client.ConnHandler do
   end
 
   @doc """
+  Synchronous message sending, replies with :ok on success.
+  """
+  def handle_call({:send, message}, _from, {agent}) do
+    %{:conn => conn} = Agent.get(agent, fn map -> map end)
+    Socket.Stream.send! conn, message
+    {:reply, :ok, {agent}}
+  end
+
+  @doc """
   Accepts a cast from the connection server and sends the message to
   the client.
   """

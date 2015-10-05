@@ -72,6 +72,15 @@ defmodule ExIRCd.Client.ConnServer do
             GenServer.cast(handler, {:send, MessageParser.parse_message_to_raw(%Message{prefix: "ExIRCd@localhost", command: 439, args: ["*"], trailing: "Please wait while we process your connection."})})
             # TODO: Register with super server and being intialization
             Agent.update(agent, fn map -> Dict.put(map, :user, %{user | ip: ip, rdns: "temp_rdns"}) end)
+            # Start registration timeout
+            Task.start(fn ->
+                        :timer.sleep 10000
+                        case Agent.get(agent, fn map -> map end) do
+                          %{:ready => true} -> :ok
+                          %{:ready => false, :server => server} ->
+                            send server, {:close_conn, "Registration timed out"}
+                        end
+                      end)
             {:noreply, {agent}}
           _ ->
             send self(), {:start_conn}
@@ -80,6 +89,20 @@ defmodule ExIRCd.Client.ConnServer do
     end
   end
 
+  @doc """
+  Terminates the connection with reason `reason`. Used for ping timeouts etc.
+  """
+  def handle_info({:close_conn, reason}, {agent}) do
+    %{:sup => sup, :handler => handler, :user => user} = Agent.get(agent, fn map -> map end)
+    :ok =  GenServer.call(handler, {:send, MessageParser.parse_message_to_raw(%Message{command: "ERROR", args: [":Closing Link:", user.rdns, "(#{reason})"]})})
+    ExIRCd.ConnSuperSup.close_connection sup
+    {:noreply, {agent}}
+  end
+
+  @doc """
+  Handles the socket handler being closed, requesting that the connection
+  supervisor and children be terminated.
+  """
   def handle_info({:socket_closed}, {agent}) do
     %{:sup => sup} = Agent.get(agent, fn map -> map end)
     ExIRCd.ConnSuperSup.close_connection sup

@@ -11,6 +11,7 @@ defmodule ExIRCd.Client.InitModule.NickModule do
     [^nick|_othermatches] = Regex.run acceptable_nicks, nick
     # TODO: Verify this nick is unique, do registration, etc.
     nuser = %{user| nick: nick}
+    Agent.update(agent, fn map -> Dict.put(map, :user, nuser) end)
     :ok
   end
 end
