@@ -2,8 +2,8 @@ defmodule ExIRCd.Client.ConnHandler do
   @moduledoc """
   Connection handler. This serves to handle the raw socket from a client, passing messages
   to the connection server and receiving messages from it. Upon initialization it will
-  send a message to the connection server informing it of its pid so that a proper link
-  may be established between the handler and server
+  send a message to the connection server informing it of the agent being updated so
+  that normal operation may begin between both .
   """
   require Logger
 
@@ -29,19 +29,22 @@ defmodule ExIRCd.Client.ConnHandler do
   @doc """
   Informs the connection server and acceptor that the handler is ready to
   be utilized. It is the first callback triggered after init/1 is completed.
+  
+  In addition, if the socket handler has somehow crashed previously, it will detect
+  this and force a shutdown of the entire function.
   """
   def handle_info({:ready}, {agent, acceptor}) do
     Logger.log :debug, "Connection handler sending registration to acceptor"
-      case Agent.get(agent, fn map -> map end) do
-        %{:handler => handler, :server => server} ->
-          Logger.log :warn, "Connection handler was started abnormally, shutting down"
-          send server, {:socket_closed}
-          {:noreply, {agent}}
-        _ ->
-          s = self()
-          Agent.update(agent, fn map -> Dict.put(map, :handler, s) end)
-          send acceptor, self()
-          {:noreply, {agent}}
+    case Agent.get(agent, fn map -> map end) do
+      %{:handler => handler, :server => server} ->
+        Logger.log :warn, "Connection handler was started abnormally, shutting down"
+        send server, {:socket_closed}
+        {:noreply, {agent}}
+      %{:server => server} ->
+        s = self()
+        Agent.update(agent, fn map -> Dict.put(map, :handler, s) end)
+        send acceptor, self()
+        {:noreply, {agent}}
     end
   end
 

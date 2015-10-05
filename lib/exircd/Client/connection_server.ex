@@ -3,8 +3,7 @@ defmodule ExIRCd.Client.ConnServer do
   The connection server manages an individual connection. It has its own set of modules and will
   hold state information about the connection, such as channels joined, etc.
 
-  It is created from the connection supervisor and given the acceptor pid, the connection, the 
-  connection supervisor pid, and the super server pid.
+  It is created from the connection supervisor and given the agent.
   """
   require Logger
   use GenServer
@@ -48,13 +47,8 @@ defmodule ExIRCd.Client.ConnServer do
     {:ok, {ip, _port}} = Socket.local conn
     # TODO: rDNS query, SSL check, ban check
     GenServer.cast(handler, {:send, MessageParser.parse_message_to_raw(%Message{command: 439, args: ["*"], trailing: "Please wait while we process your connection."})})
-    send self(), {:register}
+    # TODO: Register with super server and being intialization
     {:noreply, {agent, %{user | ip: ip, rdns: "temp_rdns"}}}
-  end
-
-  def handle_info({:register}, {agent, user}) do
-    # Register the connection with the superserver
-    {:noreply, {agent, user}}
   end
 
   def handle_info({:socket_closed}, {agent, user}) do

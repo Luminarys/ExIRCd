@@ -1,15 +1,13 @@
 defmodule ExIRCd.Client.ConnSup do
   @moduledoc """
   Connection Supervisor. This supervisor manages an individual connection,
-  which includes a connection server and a connection handler supervisor
-  and connection handler.
-  
+  which includes a connection server and a connection handler.
   
   The connection supervisor is initially called with the connection, and the
-  acceptor pid. It passes these as well as its own pid to the connection
-  server. The connection server will init, and send itself a message which
-  will cause it to tell the connection supervisor to spawn the connection
-  handler supervisor using the connection, acceptor pid, and connection server pid.
+  acceptor pid. The supervisor first creates the connection server which registers
+  its pid in the shared agent. The connection handler is then started, and adds its
+  own pid to the shared agent and tells the connection server that it is properly
+  initialized. At this point, normal operation begins between both.
   """
   use Supervisor
   require Logger
@@ -24,7 +22,7 @@ defmodule ExIRCd.Client.ConnSup do
 
   def init([acceptor, conn]) do
     Logger.log :debug, "New Connection Supervisor created!"
-    # A
+    # Agent is used to store state so that the handler and server may communicate easily
     {:ok, agent} = Agent.start_link fn -> %{} end
     Agent.update(agent, fn map -> Dict.put(map, :conn, conn) end)
     s = self()
