@@ -27,6 +27,12 @@ defmodule ExIRCd.Client.ConnSup do
     Agent.update(agent, fn map -> Dict.put(map, :conn, conn) end)
     s = self()
     Agent.update(agent, fn map -> Dict.put(map, :sup, s) end)
+    Agent.update(agent, fn map -> Dict.put(map, :ready, false) end)
+
+    # TODO: Set this via configuration options
+    alias ExIRCd.Client.InitModule, as: IMods
+    imods = [IMods.UserModule, IMods.NickModule]
+    Agent.update(agent, fn map -> Dict.put(map, :imods, imods) end)
     children = [
       worker(ExIRCd.Client.ConnServer, [agent], restart: :transient),
       worker(ExIRCd.Client.ConnHandler, [agent, acceptor], restart: :transient),

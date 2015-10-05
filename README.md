@@ -11,10 +11,12 @@ If you'd like to contribute, read the docs, and see the
 design specification image.
 
 ## Current Status
-The architecture is in place, and right now connections are just echo servers.
-This will be changed soon.
+* Basic Architecture in place
+* Client initialization modules are done
 
 ## TODO
+* WRITE UNIT TESTS
+* DOCUMENT STUFF
 * Implement the Super Server properly
 * Get basic IRC commands up
 * Implement Ecto and PSQL
