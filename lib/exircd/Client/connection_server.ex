@@ -16,53 +16,50 @@ defmodule ExIRCd.Client.ConnServer do
     defstruct nick: "", name: "", rdns: "", ip: "", secure: false, channels: []
   end
 
-  def start_link(acceptor, sup, conn) do
+  def start_link(agent) do
     Logger.log :debug, "Connection server started!"
-    GenServer.start_link __MODULE__, [acceptor, sup, conn]
+    GenServer.start_link __MODULE__, [agent]
   end
 
-  def init([acceptor, sup, conn]) do
-    send self(), {:start_handler}
+  def init([agent]) do
     Logger.log :debug, "Connection server initialized"
-    {:ok, {acceptor, sup, conn, %User{}}}
+    s = self()
+    Agent.update(agent, fn map -> Dict.put(map, :server, s) end)
+    send self(), {:start_conn}
+    {:ok, {agent, %User{}}}
   end
 
-  def handle_cast({:recv, message}, {sup, handler, user}) do
+  def handle_cast({:recv, message}, {agent, user}) do
     case MessageParser.parse_raw_to_message(message) do
       {:ok, m} ->
+        %{:handler => handler} = Agent.get(agent, fn map -> map end)
         GenServer.cast(handler, {:send, MessageParser.parse_message_to_raw(m)})
-        {:noreply, {sup, handler, user}}
-      {:error, error} ->
+        {:noreply, {agent, user}}
+      {:error, _error} ->
         Logger.log :warn, "User input was not properly formatted"
-        {:noreply, {sup, handler, user}}
+        {:noreply, {agent, user}}
     end
   end
 
-  import Supervisor.Spec
-
-  def handle_info({:start_handler}, {acceptor, sup, conn, user}) do
-    Logger.log :debug, "Connection server spawning connection handler supervisor!"
-    handler = supervisor(ExIRCd.Client.ConnHandlerSup, [acceptor, conn, self()], restart: :transient)
-    Supervisor.start_child(sup, handler)
-    {:noreply, {sup, conn, user}}
-  end
-
-  def handle_info({:link, handler}, {sup, conn, user}) do
-    Logger.log :debug, "Connection server received link from handler"
-    send self(), {:register}
+  def handle_info({:start_conn}, {agent, user}) do
+    # Wait for the connection handler to startup. Even if this fails we'll keep on erroring and restarting until it works
+    :timer.sleep(150)
+    %{:conn => conn, :handler => handler} = Agent.get(agent, fn map -> map end)
     {:ok, {ip, _port}} = Socket.local conn
     # TODO: rDNS query, SSL check, ban check
     GenServer.cast(handler, {:send, MessageParser.parse_message_to_raw(%Message{command: 439, args: ["*"], trailing: "Please wait while we process your connection."})})
-    {:noreply, {sup, handler, %{user | ip: ip, rdns: "temp_rdns"}}}
+    send self(), {:register}
+    {:noreply, {agent, %{user | ip: ip, rdns: "temp_rdns"}}}
   end
 
-  def handle_info({:register}, {sup, handler, user}) do
+  def handle_info({:register}, {agent, user}) do
     # Register the connection with the superserver
-    {:noreply, {sup, handler, user}}
+    {:noreply, {agent, user}}
   end
 
-  def handle_info({:socket_closed}, {sup, handler, user}) do
+  def handle_info({:socket_closed}, {agent, user}) do
+    %{:sup => sup} = Agent.get(agent, fn map -> map end)
     ExIRCd.ConnSuperSup.close_connection sup
-    {:noreply, {sup, handler, user}}
+    {:noreply, {agent, user}}
   end
 end
