@@ -69,7 +69,6 @@ defmodule ExIRCd.Client.ConnServer do
             %{:handler => handler} = Agent.get(agent, fn map -> map end)
             {:ok, {ip, _port}} = Socket.local conn
             # TODO: rDNS query, SSL check, ban check
-            GenServer.cast(handler, {:send, MessageParser.parse_message_to_raw(%Message{prefix: "ExIRCd@localhost", command: 439, args: ["*"], trailing: "Please wait while we process your connection."})})
             # TODO: Register with super server and being intialization
             Agent.update(agent, fn map -> Dict.put(map, :user, %{user | ip: ip, rdns: "temp_rdns"}) end)
             # Start registration timeout
@@ -94,7 +93,8 @@ defmodule ExIRCd.Client.ConnServer do
   """
   def handle_info({:close_conn, reason}, {agent}) do
     %{:sup => sup, :handler => handler, :user => user} = Agent.get(agent, fn map -> map end)
-    :ok =  GenServer.call(handler, {:send, MessageParser.parse_message_to_raw(%Message{command: "ERROR", args: [":Closing Link:", user.rdns, "(#{reason})"]})})
+    raw_message = MessageParser.parse_message_to_raw(%Message{command: "ERROR", args: [":Closing Link:", user.rdns, "(#{reason})"]})
+    :ok =  GenServer.call(handler, {:send, raw_message})
     ExIRCd.ConnSuperSup.close_connection sup
     {:noreply, {agent}}
   end
