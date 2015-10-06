@@ -19,8 +19,8 @@ defmodule ExIRCd.Client.ConnServer do
   Starts the connection server using the given agent.
   """
   def start_link(agent) do
-    GenServer.start_link __MODULE__, [agent]
     Logger.log :debug, "Connection server started!"
+    GenServer.start_link __MODULE__, [agent]
   end
 
   @doc """
@@ -43,6 +43,7 @@ defmodule ExIRCd.Client.ConnServer do
   """
   def handle_cast({:recv, raw_message}, {agent}) do
    %{:user => user} = Agent.get(agent, fn map -> map end)
+   Logger.log :debug, "Received message: #{String.rstrip raw_message}"
     case MessageParser.parse_raw_to_message(raw_message, user) do
       {:ok, message} ->
         case Agent.get(agent, fn map -> map end) do

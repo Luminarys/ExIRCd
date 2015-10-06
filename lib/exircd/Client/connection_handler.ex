@@ -6,11 +6,13 @@ defmodule ExIRCd.Client.ConnHandler do
   that normal operation may begin between both .
   """
   require Logger
+  use GenServer
 
   @doc """
   Starts the connection handler using the acceptor and agent.
   """
   def start_link(agent, acceptor) do
+    Logger.log :debug, "Connection handler started"
     GenServer.start_link(__MODULE__, [agent, acceptor])
   end
 
@@ -78,9 +80,14 @@ defmodule ExIRCd.Client.ConnHandler do
   Handles an incoming message from the client, sending it to the server.
   """
   def handle_info({ :tcp, _, message }, {agent}) do
-    %{:server => server} = Agent.get(agent, fn map -> map end)
-    GenServer.cast(server, {:recv, message})
-    { :noreply, {agent}}
+    case String.ends_with? message, "\r\n" do
+      true ->
+        %{:server => server} = Agent.get(agent, fn map -> map end)
+        for m <- String.split(String.rstrip(message), "\r\n"), do: GenServer.cast(server, {:recv, m <> "\r\n"})
+        { :noreply, {agent}}
+      false ->
+        { :noreply, {agent}}
+    end
   end
 
   @doc """
