@@ -83,10 +83,12 @@ defmodule ExIRCd.Client.ConnServer do
             # Start registration timeout
             Task.start(fn ->
                         :timer.sleep 10000
-                        case Agent.get(agent, fn map -> map end) do
-                          %{:ready => true} -> :ok
-                          %{:ready => false, :server => server} ->
-                            send server, {:close_conn, "Registration timed out"}
+                        if Process.alive? agent do
+                          case Agent.get(agent, fn map -> map end) do
+                            %{:ready => true} -> :ok
+                            %{:ready => false, :server => server} ->
+                              send server, {:close_conn, "Registration timed out"}
+                          end
                         end
                       end)
             {:noreply, {agent}}

@@ -16,7 +16,7 @@ defmodule ExIRCdTest do
   # def connect(pid) do
   #   time = :random.uniform(10)
   #   :timer.sleep(50 * time)
-  #    socket = Socket.connect! "tcp://localhost:8080"
+  #    socket = Socket.connect! "tcp://luminarys.com:6666"
   #    socket |> Socket.Stream.send! "USER guest 8 * :Ronnie Reagan\r\n"
   #    socket |> Socket.Stream.send! "NICK lol\r\n"
   #    poll(socket, 10)
