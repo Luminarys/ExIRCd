@@ -16,6 +16,9 @@ defmodule ExIRCd.ConnSuperSup do
   
   use Supervisor
   
+  @doc """
+  Starts the connection super server with the given options.
+  """
   def start_link(opts \\ []) do
     Supervisor.start_link(__MODULE__, :ok, opts)
   end

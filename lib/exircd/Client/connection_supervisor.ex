@@ -12,12 +12,12 @@ defmodule ExIRCd.Client.ConnSup do
   use Supervisor
   require Logger
 
+  @doc """
+  Starts a connection supervisor with an acceptor and socket
+  connection.
+  """
   def start_link(acceptor, conn) do
     Supervisor.start_link(__MODULE__, [acceptor, conn])
-  end
-
-  def start_link() do
-    {:error, {:shutdown, "Server must be started with the acceptor and connection pids"}}
   end
 
   def init([acceptor, conn]) do
