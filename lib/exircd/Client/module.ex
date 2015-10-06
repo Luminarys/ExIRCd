@@ -6,8 +6,17 @@ defmodule ExIRCd.Client.InitModule do
   """
   use Behaviour
   require Logger
-  defcallback parse(%ExIRCd.Client.Message{}, Agent.t) :: any 
 
+  @doc """
+  Callback for an init module that takes a message, an agent, and
+  returns :ok on success
+  """
+  defcallback parse(%ExIRCd.Client.Message{}, Agent.t) :: :ok
+
+  @doc """
+  Removes an InitModule from a given agent and sets the ready state
+  to true if all init modules have succesfully been removed.
+  """
   def removeMod(agent) do
     %{:imods => imods} = Agent.get(agent, fn map -> map end)
     imods_left = tl(imods)

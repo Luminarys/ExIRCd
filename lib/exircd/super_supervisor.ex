@@ -10,11 +10,19 @@ defmodule ExIRCd.SuperSup do
   """
   require Logger
   use Supervisor
+
+  @doc """
+  Starts the super supervisor with the given options.
+  """
   def start_link(opts \\ []) do
     Supervisor.start_link(__MODULE__, opts)
   end
 
   @conn_super_sup_name ExIRCd.ConnSuperSup
+  @doc """
+  Starts the primary sub supervisors, and registers the super connection
+  supervisor's name globally.
+  """
   def init(_opts) do
     children = [
       supervisor(ExIRCd.SuperServerSup, [], restart: :permanent),

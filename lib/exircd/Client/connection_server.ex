@@ -15,11 +15,19 @@ defmodule ExIRCd.Client.ConnServer do
     defstruct user: "", nick: "", name: "", rdns: "", ip: "", modes: [] ,channels: []
   end
 
+  @doc """
+  Starts the connection server using the given agent.
+  """
   def start_link(agent) do
-    Logger.log :debug, "Connection server started!"
     GenServer.start_link __MODULE__, [agent]
+    Logger.log :debug, "Connection server started!"
   end
 
+  @doc """
+  Initializes the connection server, inserting its pid and the user struct
+  into the agent. It also sends itself `:start_conn` to be run immediatly after
+  initialization.
+  """
   def init([agent]) do
     Logger.log :debug, "Connection server initialized"
     s = self()

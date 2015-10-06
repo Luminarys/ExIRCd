@@ -7,10 +7,17 @@ defmodule ExIRCd.Client.ConnHandler do
   """
   require Logger
 
+  @doc """
+  Starts the connection handler using the acceptor and agent.
+  """
   def start_link(agent, acceptor) do
     GenServer.start_link(__MODULE__, [agent, acceptor])
   end
 
+  @doc """
+  Initializes the handler by sending itself `:ready` which will
+  be the first callback triggerde by GenServer.
+  """
   def init([agent, acceptor]) do
     send self(), {:ready}
     {:ok, {agent, acceptor}}

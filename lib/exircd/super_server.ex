@@ -10,10 +10,16 @@ defmodule ExIRCd.SuperServerSup do
 
   use Supervisor
 
+  @doc """
+  Starts the super server supervisor with the provided options.
+  """
   def start_link(opts \\ []) do
     Supervisor.start_link(__MODULE__, opts)
   end
 
+  @doc """
+  Initializes and starts the super server.
+  """
   def init(_opts) do
     children = [
       worker(ExIRCd.SuperServer.Server, [[name: @super_server_name]], restart: :permanent)

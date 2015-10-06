@@ -8,6 +8,10 @@ defmodule ExIRCd.SuperServer.Server do
   require Logger
   use GenServer
   
+  @doc """
+  Starts the super server with the given state
+  and options, if they are passed
+  """
   def start_link(state, opts \\ []) do
     GenServer.start_link(__MODULE__, state, opts)
   end
