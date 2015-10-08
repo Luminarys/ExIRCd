@@ -48,7 +48,7 @@ defmodule ExIRCd.Client.ConnServer do
       {:ok, message} ->
         case Agent.get(agent, fn map -> map end) do
           %{:imods => [next_mod|_mods_left], :ready => false} ->
-            if :ok == next_mod.parse(message, agent) do
+            if {:ok, nil} == next_mod.parse(message, agent) do
               ExIRCd.Client.InitModule.removeMod(agent)
             {:noreply, {agent}}
             else

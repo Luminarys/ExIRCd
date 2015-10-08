@@ -11,7 +11,8 @@ defmodule ExIRCd.Client.InitModule do
   Callback for an init module that takes a message, an agent, and
   returns :ok on success
   """
-  defcallback parse(%ExIRCd.Client.Message{}, Agent.t) :: :ok
+  defcallback check(%ExIRCd.Client.Message{}, Agent.t) :: {true, any} | {false, any}
+  defcallback parse(%ExIRCd.Client.Message{}, Agent.t) :: {:ok, any} | {:failed, any}
 
   @doc """
   Removes an InitModule from a given agent and sets the ready state
