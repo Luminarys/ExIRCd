@@ -33,8 +33,31 @@ defmodule ExIRCd.Client.ConnServer do
     s = self()
     Agent.update(agent, fn map -> Dict.put(map, :server, s) end)
     Agent.update(agent, fn map -> Dict.put(map, :user, %User{}) end)
-    send self(), {:start_conn}
     {:ok, {agent}}
+  end
+
+  def handle_call(:handler_ready, _from, {agent}) do
+    %{:conn => conn, :user => user} = Agent.get(agent, fn map -> map end)
+    {:ok, {ip, _port}} = Socket.local conn
+    # TODO: rDNS query, SSL check, ban check
+    # TODO: Register with super server and being intialization
+    Agent.update(agent, fn map -> Dict.put(map, :user, %{user | ip: ip, rdns: "temp_rdns"}) end)
+    # Start registration timeout
+    Task.start(fn ->
+                :timer.sleep 10000
+                if Process.alive? agent do
+                  case Agent.get(agent, fn map -> map end) do
+                    %{:ready => true} -> :ok
+                    %{:ready => false, :server => server} ->
+                      GenServer.cast server, {:close_conn, "Registration timed out"}
+                  end
+                end
+              end)
+    {:reply, :ok, {agent}}
+  end
+
+  def handle_call(:interface_ready, _from, {agent}) do
+    {:reply, :ok, {agent}}
   end
 
   @doc """
@@ -50,9 +73,9 @@ defmodule ExIRCd.Client.ConnServer do
           %{:imods => [next_mod|_mods_left], :ready => false} ->
             if {:ok, nil} == next_mod.parse(message, agent) do
               ExIRCd.Client.InitModule.removeMod(agent)
-            {:noreply, {agent}}
+              {:noreply, {agent}}
             else
-            {:noreply, {agent}}
+              {:noreply, {agent}}
             end
           %{:ready => true} ->
             {:noreply, {agent}}
@@ -64,48 +87,12 @@ defmodule ExIRCd.Client.ConnServer do
   end
 
   @doc """
-  Handles the startup message passed to self. If the handler is uninitialized,
-  then this will wait until it gets a message of initialization, otherwise 
-  """
-  def handle_info({:start_conn}, {agent}) do
-    # Wait for the connection handler to startup. Even if this fails we'll keep on erroring and restarting until it works
-    case Agent.get(agent, fn map -> map end) do
-      %{:conn => _conn, :handler => _handler, :user => _user} ->
-        {:noreply, {agent}}
-      %{:conn => conn, :user => user} ->
-        receive do
-          :handler_ready ->
-            %{:handler => handler} = Agent.get(agent, fn map -> map end)
-            {:ok, {ip, _port}} = Socket.local conn
-            # TODO: rDNS query, SSL check, ban check
-            # TODO: Register with super server and being intialization
-            Agent.update(agent, fn map -> Dict.put(map, :user, %{user | ip: ip, rdns: "temp_rdns"}) end)
-            # Start registration timeout
-            Task.start(fn ->
-                        :timer.sleep 10000
-                        if Process.alive? agent do
-                          case Agent.get(agent, fn map -> map end) do
-                            %{:ready => true} -> :ok
-                            %{:ready => false, :server => server} ->
-                              send server, {:close_conn, "Registration timed out"}
-                          end
-                        end
-                      end)
-            {:noreply, {agent}}
-          _ ->
-            send self(), {:start_conn}
-            {:noreply, {agent}}
-        end
-    end
-  end
-
-  @doc """
   Terminates the connection with reason `reason`. Used for ping timeouts etc.
   """
-  def handle_info({:close_conn, reason}, {agent}) do
+  def handle_cast({:close_conn, reason}, {agent}) do
     %{:sup => sup, :handler => handler, :user => user} = Agent.get(agent, fn map -> map end)
     raw_message = MessageParser.parse_message_to_raw(%Message{command: "ERROR", args: [":Closing Link:", user.rdns, "(#{reason})"]})
-    :ok =  GenServer.call(handler, {:send, raw_message})
+    :ok = GenServer.call(handler, {:send, raw_message})
     ExIRCd.ConnSuperSup.close_connection sup
     {:noreply, {agent}}
   end

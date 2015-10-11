@@ -36,6 +36,7 @@ defmodule ExIRCd.Client.ConnSup do
     children = [
       worker(ExIRCd.Client.ConnServer, [agent], restart: :transient),
       worker(ExIRCd.Client.ConnHandler, [agent, acceptor], restart: :transient),
+      worker(ExIRCd.Client.ConnInterface, [agent], restart: :transient),
     ]
 
     supervise(children, strategy: :one_for_one)

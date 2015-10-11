@@ -62,7 +62,7 @@ defmodule ExIRCd.Client.ConnHandler do
         s = self()
         Agent.update(agent, fn map -> Dict.put(map, :handler, s) end)
         send acceptor, self()
-        send server, :handler_ready
+        :ok = GenServer.call(server, :handler_ready)
         {:noreply, {agent}}
     end
   end
