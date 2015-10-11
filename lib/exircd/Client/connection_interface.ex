@@ -30,7 +30,7 @@ defmodule ExIRCd.Client.ConnInterface do
   Informs the connection server that the connection interface is ready to be used.
   It is the first callback triggered after init/1 is completed.
 
-  In addition, if the socket handler has somehow crashed previously, it will detect
+  In addition, if the interface handler has somehow crashed previously, it will detect
   this and force a shutdown of the entire function.
   """
   def handle_info({:ready}, {agent}) do
