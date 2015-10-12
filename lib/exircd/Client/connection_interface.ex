@@ -27,6 +27,34 @@ defmodule ExIRCd.Client.ConnInterface do
   end
 
   @doc """
+  Handle a call from the super server.
+  """
+  def handle_call({:super_server_msg, message}, _from, {agent}) do
+    {:reply, :ok, {agent}}
+  end
+
+  @doc """
+  Handle a call from another client.
+  """
+  def handle_call({:client_msg, message}, _from, {agent}) do
+    {:reply, :ok, {agent}}
+  end
+
+  @doc """
+  Handle a cast from the super server.
+  """
+  def handle_cast({:super_server_msg, message}, _from, {agent}) do
+    {:noreply, {agent}}
+  end
+
+  @doc """
+  Handle a cast from another client.
+  """
+  def handle_cast({:client_msg, message}, _from, {agent}) do
+    {:noreply, {agent}}
+  end
+
+  @doc """
   Informs the connection server that the connection interface is ready to be used.
   It is the first callback triggered after init/1 is completed.
 
