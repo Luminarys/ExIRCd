@@ -1,4 +1,4 @@
-defmodule ExIRCd.Client.InitModule do
+defmodule ExIRCd.Client.Command do
   @moduledoc """
   A module which deals with client connection initialization.
   A InitModule may perform tasks like checking for passwords,
@@ -16,7 +16,7 @@ defmodule ExIRCd.Client.InitModule do
   @doc """
   Callback for parsing a message once it's been validated.
   """
-  defcallback parse(%ExIRCd.Client.Message{}, Agent.t) :: {:ok, any} | {:failed, any}
+  defcallback parse(%ExIRCd.Client.Message{}, Agent.t) :: {:ok, any} | {:error, %ExIRCd.Client.Message{}} | {:failed, any}
 
   @doc """
   Removes an InitModule from a given agent and sets the ready state

@@ -1,5 +1,5 @@
-defmodule ExIRCd.Client.InitModule.NickModule do
-  @behaviour ExIRCd.Client.InitModule
+defmodule ExIRCd.Client.Command.Nick do
+  @behaviour ExIRCd.Client.Command
   alias ExIRCd.Client.Message, as: Message
   @moduledoc """
   Parses out the NICK message.

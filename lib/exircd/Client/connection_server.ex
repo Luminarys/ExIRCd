@@ -12,7 +12,7 @@ defmodule ExIRCd.Client.ConnServer do
   alias ExIRCd.Client.MessageParser, as: MessageParser
 
   defmodule User do
-    defstruct user: "", nick: "", name: "", rdns: "", ip: "", modes: [] ,channels: []
+    defstruct user: "", nick: "", name: "", rdns: "", ip: "", modes: [] ,channels: [], registered: false
   end
 
   @doc """
@@ -70,12 +70,14 @@ defmodule ExIRCd.Client.ConnServer do
     case MessageParser.parse_raw_to_message(raw_message, user) do
       {:ok, message} ->
         case Agent.get(agent, fn map -> map end) do
-          %{:imods => [next_mod|_mods_left], :ready => false} ->
-            if {:ok, nil} == next_mod.parse(message, agent) do
-              ExIRCd.Client.InitModule.removeMod(agent)
-              {:noreply, {agent}}
-            else
-              {:noreply, {agent}}
+          %{:imods => [next_mod|_mods_left], :ready => false, :handler => handler} ->
+            case next_mod.parse(message, agent) do
+              {:ok, nil} ->
+                ExIRCd.Client.Command.removeMod(agent)
+                {:noreply, {agent}}
+              {:error, errMsg} ->
+                :ok = GenServer.call(handler, {:send, MessageParser.parse_message_to_raw(errMsg)})
+                {:noreply, {agent}}
             end
           %{:ready => true} ->
             {:noreply, {agent}}

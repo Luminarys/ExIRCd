@@ -33,6 +33,7 @@ defmodule ExIRCd.Mixfile do
       {:inch_ex, only: :docs},
       {:postgrex, "~> 0.9.1"},
       {:ecto, "~> 1.0"},
+      {:pipe, "~> 0.0.2"},
     ]
   end
 end

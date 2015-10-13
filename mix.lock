@@ -2,6 +2,7 @@
   "ecto": {:hex, :ecto, "1.0.4"},
   "exts": {:hex, :exts, "0.2.2"},
   "inch_ex": {:hex, :inch_ex, "0.4.0"},
+  "pipe": {:hex, :pipe, "0.0.2"},
   "poison": {:hex, :poison, "1.5.0"},
   "poolboy": {:hex, :poolboy, "1.5.1"},
   "postgrex": {:hex, :postgrex, "0.9.1"},

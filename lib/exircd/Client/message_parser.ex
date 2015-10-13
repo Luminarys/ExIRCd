@@ -28,7 +28,6 @@ defmodule ExIRCd.Client.MessageParser do
             false ->
               parse_clean_to_message(string, user)
           end
-
         false ->
           {:error, :improper_ending}
       end
