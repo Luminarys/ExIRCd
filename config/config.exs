@@ -28,3 +28,9 @@ use Mix.Config
 # here (which is why it is important to import them last).
 #
 #     import_config "#{Mix.env}.exs"
+config :exircd,
+  adapter: Ecto.Adapters.Postgres,
+  database: "exircd",
+  username: "postgres",
+  password: "postgres",
+  hostname: "postgres"
