@@ -1,10 +1,10 @@
 defmodule ExIRCd.Repo do
-  use Ecto.Repo, otp_app: :simple
+  use Ecto.Repo, otp_app: :exircd
 end
 
 defmodule Channel do
   use Ecto.Model
-  schema "channel" do
+  schema "channels" do
     belongs_to :owner, User
     belongs_to :topic, Topic
     has_many :bans, ChanBan
@@ -13,7 +13,7 @@ end
 
 defmodule User do
   use Ecto.Model
-  schema "user" do
+  schema "users" do
     has_many :channels, Channel
     field :nick, :string
     field :email, :string
@@ -23,7 +23,7 @@ end
 
 defmodule Topic do
   use Ecto.Model
-  schema "topic" do
+  schema "topics" do
     has_one :channel, Channel
     field :text, :string
     field :setter, :string
@@ -33,7 +33,7 @@ end
 
 defmodule ChanBan do
   use Ecto.Model
-  schema "chanban" do
+  schema "chanbans" do
     field :mask, :string
     field :setter, :string
     belongs_to :channel, Channel

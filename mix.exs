@@ -14,7 +14,7 @@ defmodule ExIRCd.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :postrgrex, :ecto],
+    [applications: [:logger, :postgrex, :ecto],
     mod: {ExIRCd, []}]
   end
 
@@ -31,8 +31,8 @@ defmodule ExIRCd.Mixfile do
     [
       {:reagent, "~> 0.1.5"},
       {:inch_ex, only: :docs},
-      {:postgrex, ">= 0.0.0"},
-      {:ecto, path: "../.."},
+      {:postgrex, "~> 0.9.1"},
+      {:ecto, "~> 1.0"},
     ]
   end
 end
