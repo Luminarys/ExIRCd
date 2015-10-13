@@ -3,6 +3,10 @@ defmodule ExIRCd.Repo do
 end
 
 defmodule Channel do
+  @moduledoc """
+  An IRC channel. It can have an owner,
+  topic, and bans.
+  """
   use Ecto.Model
   schema "channels" do
     belongs_to :owner, User
@@ -12,6 +16,10 @@ defmodule Channel do
 end
 
 defmodule User do
+  @moduledoc """
+  A registered IRC user. Users have a nick, email,
+  and password.
+  """
   use Ecto.Model
   schema "users" do
     has_many :channels, Channel
@@ -22,6 +30,10 @@ defmodule User do
 end
 
 defmodule Topic do
+  @moduledoc """
+  A channel topic. It has the text, the hostmask
+  of the person who set it, and a timestamp.
+  """
   use Ecto.Model
   schema "topics" do
     has_one :channel, Channel
@@ -32,6 +44,10 @@ defmodule Topic do
 end
 
 defmodule ChanBan do
+  @moduledoc """
+  A channel ban. It has a hostmask to ban, the hostmask of the
+  person who set it, the channel it applies to, and a timestamp.
+  """
   use Ecto.Model
   schema "chanbans" do
     field :mask, :string
