@@ -7,7 +7,7 @@ defmodule ExIRCd.Client.Command.Nick do
   """
 
   def check(%Message{command: command, args: _arg_list, trailing: _trailing}, _agent) do
-    {command == "NICK", nil}
+    command == "NICK"
   end
 
   def parse(message, agent) do
@@ -20,6 +20,7 @@ defmodule ExIRCd.Client.Command.Nick do
     |> check_restriction
     |> check_valid
     |> check_available
+    |> update_registration
     |> set_nick(agent)
   end
 
@@ -54,6 +55,13 @@ defmodule ExIRCd.Client.Command.Nick do
   defp check_available({:ok, {nick, user}}) do
     # TODO: Actually check all nicks in use.
     {:ok, {nick, user}}
+  end
+
+  defp update_registration({:ok, {nick, user}}) do
+    case user.user do
+      "" -> {:ok, {nick, user}}
+      _ -> {:ok, {nick, %{user| registered: true}}}
+    end
   end
 
   defp set_nick({:ok, {nick, user}}, agent) do

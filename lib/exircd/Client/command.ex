@@ -11,7 +11,7 @@ defmodule ExIRCd.Client.Command do
   Callback for an init module that takes a message, an agent, and
   returns :ok on success.
   """
-  defcallback check(%ExIRCd.Client.Message{}, Agent.t) :: {true, any} | {false, any}
+  defcallback check(%ExIRCd.Client.Message{}, Agent.t) :: true | false
 
   @doc """
   Callback for parsing a message once it's been validated.

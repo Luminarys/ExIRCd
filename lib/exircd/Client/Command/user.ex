@@ -7,7 +7,7 @@ defmodule ExIRCd.Client.Command.User do
   """
 
   def check(%Message{command: command, args: _arg_list, trailing: _trailing}, _agent) do
-    {command == "USER", nil}
+    command == "USER"
   end
 
   def parse(message, agent) do
@@ -19,6 +19,7 @@ defmodule ExIRCd.Client.Command.User do
     |> check_registration
     |> check_args
     |> apply_mask
+    |> update_registration
     |> update_user(agent)
   end
 
@@ -55,6 +56,13 @@ defmodule ExIRCd.Client.Command.User do
         {:ok, %{user| user: username, name: realname, modes: modes}}
       _ ->
         {:ok, %{user| user: username, name: realname}}
+    end
+  end
+
+  defp update_registration({:ok, user}) do
+    case user.nick do
+      "" -> {:ok, user}
+      _ -> {:ok, %{user| registered: true}}
     end
   end
 

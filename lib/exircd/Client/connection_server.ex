@@ -47,9 +47,12 @@ defmodule ExIRCd.Client.ConnServer do
                 :timer.sleep 15000
                 if Process.alive? agent do
                   case Agent.get(agent, fn map -> map end) do
-                    %{:ready => true} -> :ok
-                    %{:ready => false, :server => server} ->
-                      GenServer.cast server, {:close_conn, "Registration timed out"}
+                    %{:user => user, :server => server} ->
+                      case user do
+                        %{:registered => true} -> :ok
+                        %{:registered => false} ->
+                          GenServer.cast server, {:close_conn, "Registration timed out"}
+                      end
                   end
                 end
               end)
@@ -65,27 +68,13 @@ defmodule ExIRCd.Client.ConnServer do
   The message is parsed into the proper struct and then handled.
   """
   def handle_cast({:recv, raw_message}, {agent}) do
-   %{:user => user} = Agent.get(agent, fn map -> map end)
-   Logger.log :debug, "Received message: #{String.rstrip raw_message}"
-    case MessageParser.parse_raw_to_message(raw_message, user) do
-      {:ok, message} ->
-        case Agent.get(agent, fn map -> map end) do
-          %{:imods => [next_mod|_mods_left], :ready => false, :handler => handler} ->
-            case next_mod.parse(message, agent) do
-              {:ok, nil} ->
-                ExIRCd.Client.Command.removeMod(agent)
-                {:noreply, {agent}}
-              {:error, errMsg} ->
-                :ok = GenServer.call(handler, {:send, MessageParser.parse_message_to_raw(errMsg)})
-                {:noreply, {agent}}
-            end
-          %{:ready => true} ->
-            {:noreply, {agent}}
-        end
-      {:error, _error} ->
-        Logger.log :debug, "User input was not properly formatted"
-        {:noreply, {agent}}
-    end
+    require Pipe
+
+    Pipe.pipe_matching {:ok, _},
+    {:ok, {raw_message, agent}}
+    |> parse_message
+    |> find_command
+    |> execute_command
   end
 
   @doc """
@@ -107,5 +96,38 @@ defmodule ExIRCd.Client.ConnServer do
     %{:sup => sup} = Agent.get(agent, fn map -> map end)
     ExIRCd.ConnSuperSup.close_connection sup
     {:noreply, {agent}}
+  end
+
+  defp parse_message({:ok, {raw_message, agent}}) do
+    %{:user => user} = Agent.get(agent, fn map -> map end)
+    case MessageParser.parse_raw_to_message(raw_message, user) do
+      {:ok, message} ->
+        Logger.log :debug, "Received message: #{String.rstrip raw_message}"
+        {:ok, {message, agent}}
+      {:error, _error} ->
+        Logger.log :debug, "User input was not properly formatted"
+        {:noreply, {agent}}
+    end
+  end
+
+  defp find_command({:ok, {message, agent}}) do
+    %{:commands => commands} = Agent.get(agent, fn map -> map end)
+    case Enum.find(commands, :nomatch, fn cmd -> cmd.check(message, agent) end) do
+      :nomatch ->
+        {:noreply, {agent}}
+      command ->
+        {:ok, {&command.parse/2, message, agent}}
+    end
+  end
+
+  defp execute_command({:ok, {parser, message, agent}}) do
+    case parser.(message, agent) do
+      {:ok, nil} ->
+        {:noreply, {agent}}
+      {:error, errMsg} ->
+        %{:handler => handler} = Agent.get(agent, fn map -> map end)
+        :ok = GenServer.call(handler, {:send, MessageParser.parse_message_to_raw(errMsg)})
+        {:noreply, {agent}}
+    end
   end
 end
