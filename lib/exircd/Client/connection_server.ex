@@ -44,7 +44,7 @@ defmodule ExIRCd.Client.ConnServer do
     Agent.update(agent, fn map -> Dict.put(map, :user, %{user | ip: ip, rdns: "temp_rdns"}) end)
     # Start registration timeout
     Task.start(fn ->
-                :timer.sleep 10000
+                :timer.sleep 15000
                 if Process.alive? agent do
                   case Agent.get(agent, fn map -> map end) do
                     %{:ready => true} -> :ok

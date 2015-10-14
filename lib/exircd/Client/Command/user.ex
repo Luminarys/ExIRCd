@@ -1,6 +1,7 @@
 defmodule ExIRCd.Client.Command.User do
   @behaviour ExIRCd.Client.Command
   alias ExIRCd.Client.Message, as: Message
+  alias ExIRCd.Client.Response, as: Response
   @moduledoc """
   Parses out the USER message setting user, name, and modes accordingly.
   """
@@ -16,7 +17,7 @@ defmodule ExIRCd.Client.Command.User do
     Pipe.pipe_matching {:ok, _},
     {:ok, {message, user}}
     |> check_registration
-    |> validate_args
+    |> check_args
     |> apply_mask
     |> update_user(agent)
   end
@@ -24,32 +25,34 @@ defmodule ExIRCd.Client.Command.User do
   defp check_registration({:ok, {message, user}}) do
     case user do
       %{registered: true} ->
-        {:error, %Message{prefix: "", command: "462", args: ["*","USER"], trailing: "You may not reregister"}}
+        {:error, Response.Err.e462("You may not reregister")}
       %{registered: false} ->
         {:ok, {message, user}}
     end
   end
 
-  defp validate_args({:ok, {%Message{args: arg_list, trailing: trailing}, user}}) do
+  defp check_args({:ok, {%Message{args: arg_list, trailing: trailing}, user}}) do
     case arg_list do
       [username, mask, _unused] ->
         case trailing do
           "" ->
-            {:error, %Message{prefix: "", command: "461", args: ["*","USER"], trailing: "Not enough parameters"}}
+            {:error, Response.Err.e461("Not enough parameters")}
           realname ->
             {:ok, {{mask, username, realname}, user}}
         end
       _ ->
-        {:error, %Message{prefix: "", command: "461", args: ["*","USER"], trailing: "Incorrect parameter number"}}
+        {:error, Response.Err.e461("Incorrect parameter number")}
     end
   end
 
   defp apply_mask({:ok, {{mask, username, realname}, user}}) do
     case mask do
       "6" ->
-        {:ok, %{user| user: username, name: realname, modes: [:w]}}
+        modes = user.modes ++ [:w]
+        {:ok, %{user| user: username, name: realname, modes: modes}}
       "8" ->
-        {:ok, %{user| user: username, name: realname, modes: [:i]}}
+        modes = user.modes ++ [:i]
+        {:ok, %{user| user: username, name: realname, modes: modes}}
       _ ->
         {:ok, %{user| user: username, name: realname}}
     end
