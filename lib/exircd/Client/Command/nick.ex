@@ -47,7 +47,7 @@ defmodule ExIRCd.Client.Command.Nick do
       [^nick|_othermatches] ->
         {:ok, {nick, user}}
       _ ->
-        {:err, Response.Err.e432}
+        {:error, Response.Err.e432(nick)}
     end
   end
 
