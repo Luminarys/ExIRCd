@@ -21,8 +21,11 @@ defmodule ExIRCd.SuperServerSup do
   Initializes and starts the super server.
   """
   def init(_opts) do
+    clients = :ets.new(:clients, [:set, :public, :named_table])
+    channels = :ets.new(:channels, [:set, :public, :named_table])
+
     children = [
-      worker(ExIRCd.SuperServer.Server, [[name: @super_server_name]], restart: :permanent)
+      worker(ExIRCd.SuperServer.Server, [{clients, channels}, [name: @super_server_name]], restart: :permanent)
     ]
 
     supervise(children, strategy: :one_for_one)

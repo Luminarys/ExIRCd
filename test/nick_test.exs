@@ -14,7 +14,7 @@ defmodule NickCommandTest do
   end
 
   test "Restricted user" do
-    {:ok, agent} = Agent.start_link fn -> %{} end
+    {:ok, agent} = Agent.start_link fn -> %{:interface => self()} end
     user = %User{:modes => [:r]}
     Agent.update(agent, fn map -> Dict.put(map, :user, user) end)
     message = %Message{args: ["test"], command: "NICK"}
@@ -23,7 +23,7 @@ defmodule NickCommandTest do
 
   test "Invalid nick" do
     nick = "@#$*#$(&@(#&$"
-    {:ok, agent} = Agent.start_link fn -> %{} end
+    {:ok, agent} = Agent.start_link fn -> %{:interface => self()} end
     user = %User{}
     Agent.update(agent, fn map -> Dict.put(map, :user, user) end)
     message = %Message{args: [nick], command: "NICK"}
@@ -36,13 +36,17 @@ defmodule NickCommandTest do
   end
 
   test "Success" do
-    {:ok, agent} = Agent.start_link fn -> %{} end
+    nick = "test"
+    s = self()
+    {:ok, agent} = Agent.start_link fn -> %{:interface => s} end
     user = %User{}
     Agent.update(agent, fn map -> Dict.put(map, :user, user) end)
-    message = %Message{args: ["test"], command: "NICK"}
+    message = %Message{args: [nick], command: "NICK"}
     assert {:ok, nil} == Command.Nick.parse(message, agent)
 
     %{:user => nuser} = Agent.get(agent, fn map -> map end)
-    assert %User{nick: "test"} == nuser
+    assert %User{nick: nick} == nuser
+
+    assert [{nick, s}] == :ets.lookup(:clients, nick)
   end
 end

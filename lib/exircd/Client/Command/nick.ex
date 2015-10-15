@@ -54,7 +54,12 @@ defmodule ExIRCd.Client.Command.Nick do
 
   defp check_available({:ok, {nick, user}}) do
     # TODO: Actually check all nicks in use.
-    {:ok, {nick, user}}
+    case GenServer.call ExIRCd.SuperServer.Server, {:nick_available?, nick} do
+      true ->
+        {:ok, {nick, user}}
+      false ->
+        {:error, Response.Err.e433(nick)}
+    end
   end
 
   defp update_registration({:ok, {nick, user}}) do
@@ -67,6 +72,8 @@ defmodule ExIRCd.Client.Command.Nick do
   defp set_nick({:ok, {nick, user}}, agent) do
     nuser = %{user| nick: nick}
     Agent.update(agent, fn map -> Dict.put(map, :user, nuser) end)
+    %{:interface => interface} = Agent.get(agent, fn map -> map end)
+    GenServer.call ExIRCd.SuperServer.Server, {:add_client, nick, interface}
     {:ok, nil}
   end
 end
