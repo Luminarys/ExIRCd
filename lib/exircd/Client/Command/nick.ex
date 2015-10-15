@@ -22,6 +22,7 @@ defmodule ExIRCd.Client.Command.Nick do
     |> check_available
     |> update_registration
     |> set_nick(agent)
+    |> broadcast_change(message)
   end
 
   defp check_args({:ok, {%Message{args: arg_list, trailing: _trailing}, user}}) do
@@ -72,8 +73,19 @@ defmodule ExIRCd.Client.Command.Nick do
   defp set_nick({:ok, {nick, user}}, agent) do
     nuser = %{user| nick: nick}
     Agent.update(agent, fn map -> Dict.put(map, :user, nuser) end)
+    {:ok, {nick, user, agent}}
+  end
+
+  defp broadcast_change({:ok, {nick, user, agent}}, message) do
+    # Check if the nick is being set newly, if not do a broadcast
     %{:interface => interface} = Agent.get(agent, fn map -> map end)
-    GenServer.call ExIRCd.SuperServer.Server, {:add_client, nick, interface}
-    {:ok, nil}
+    case GenServer.call ExIRCd.SuperServer.Server, {:nick_available?, user.nick} do
+      true ->
+        GenServer.call ExIRCd.SuperServer.Server, {:add_client, nick, interface}
+        {:ok, nil}
+      false ->
+        for chan <- user.channels, do: GenServer.call interface, {:send_to_chan, chan, message}
+        {:ok, nil}
+    end
   end
 end

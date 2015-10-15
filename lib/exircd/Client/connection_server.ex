@@ -67,7 +67,7 @@ defmodule ExIRCd.Client.ConnServer do
   Handles a received message from the connection handler.
   The message is parsed into the proper struct and then handled.
   """
-  def handle_cast({:recv, raw_message}, {agent}) do
+  def handle_call({:recv, raw_message}, {agent}) do
     require Pipe
 
     Pipe.pipe_matching {:ok, _},
@@ -75,6 +75,16 @@ defmodule ExIRCd.Client.ConnServer do
     |> parse_message
     |> find_command
     |> execute_command
+  end
+
+  @doc """
+  Handles a received message from the connection interfaces,
+  sending it to the handler for transmission to the client.
+  """
+  def handle_call({:send, message}, {agent}) do
+    %{:handler => handler} = Agent.get(agent, fn map -> map end)
+    :ok = GenServer.call(handler, {:send, MessageParser.parse_message_to_raw(message)})
+    {:reply, :ok, {agent}}
   end
 
   @doc """
@@ -123,11 +133,11 @@ defmodule ExIRCd.Client.ConnServer do
   defp execute_command({:ok, {parser, message, agent}}) do
     case parser.(message, agent) do
       {:ok, nil} ->
-        {:noreply, {agent}}
+        {:reply, :ok, {agent}}
       {:error, errMsg} ->
         %{:handler => handler} = Agent.get(agent, fn map -> map end)
         :ok = GenServer.call(handler, {:send, MessageParser.parse_message_to_raw(errMsg)})
-        {:noreply, {agent}}
+        {:reply, :ok, {agent}}
     end
   end
 end

@@ -32,10 +32,13 @@ defmodule ExIRCd.SuperServer.Server do
   Removes a registered connection from the clients table
   """
   def handle_call({:remove_client, nick}, _from, {clients, channels}) do
-    :ets.delete(clients, {clients, nick})
+    :ets.delete(clients, nick)
     {:reply, :ok, {clients, channels}}
   end
 
+  @doc """
+  Checks if a nick is currently in use.
+  """
   def handle_call({:nick_available?, nick}, _from, {clients, channels}) do
     case :ets.lookup(clients, nick) do
       [{^nick, _pid}] ->
@@ -43,6 +46,24 @@ defmodule ExIRCd.SuperServer.Server do
       [] ->
         {:reply, true, {clients, channels}}
     end
+  end
+
+  @doc """
+  Renames a client's nick to a new one, changing it in all chans..
+  """
+  def handle_call({:change_nick, old_nick, new_nick}, _from, {clients, channels}) do
+    [{^old_nick, pid}] = :ets.lookup(clients, old_nick)
+    :ets.insert(clients, {new_nick, pid})
+    :ets.foldl(fn {_chan_name, chan}, _acc ->
+      case :ets.lookup(chan, old_nick) do
+        [{^old_nick, interface}] ->
+          :ets.insert(chan, {new_nick, interface})
+          :ets.delete(chan, old_nick)
+        _ ->
+          :ok
+      end
+    end, :ok, channels)
+    :ets.delete(clients, old_nick)
   end
 
   @doc """
@@ -79,5 +100,22 @@ defmodule ExIRCd.SuperServer.Server do
       [] ->
         {:reply, :error, {clients, channels}}
     end
+  end
+
+  @doc """
+  Broadcasts a message to all clients in a channel.
+  """
+  def handle_call({:send_to_chan, chan, message}, _from, {clients, channels}) do
+    send_to_chan(chan, message, channels)
+    {:reply, :ok, {clients, channels}}
+  end
+
+  defp send_to_chan(chan, message, channels) do
+    [{^chan, channel}] = :ets.lookup(channels, chan)
+    :ets.foldl(fn {nick, pid}, _acc ->
+      if nick != message.nick do
+        GenServer.call(pid, {:super_server_msg, message})
+      end
+    end, :ok, channel)
   end
 end

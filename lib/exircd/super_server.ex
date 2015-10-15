@@ -21,8 +21,8 @@ defmodule ExIRCd.SuperServerSup do
   Initializes and starts the super server.
   """
   def init(_opts) do
-    clients = :ets.new(:clients, [:set, :public, :named_table])
-    channels = :ets.new(:channels, [:set, :public, :named_table])
+    clients = :ets.new(:clients, [:set, :public, :named_table,{:read_concurrency, true}])
+    channels = :ets.new(:channels, [:set, :public, :named_table, {:read_concurrency, true}])
 
     children = [
       worker(ExIRCd.SuperServer.Server, [{clients, channels}, [name: @super_server_name]], restart: :permanent)
