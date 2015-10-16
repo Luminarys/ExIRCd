@@ -1,7 +1,7 @@
 defmodule MessageParseTest do
   use ExUnit.Case
   alias ExIRCd.Client.Message, as: Message
-  alias ExIRCd.Client.ConnServer.User, as: User
+  alias ExIRCd.Client.User, as: User
   alias ExIRCd.Client.MessageParser, as: Parser
 
   test "parse raw" do

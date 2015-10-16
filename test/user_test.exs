@@ -1,7 +1,7 @@
 defmodule UserCommandTest do
   use ExUnit.Case
   alias ExIRCd.Client.Message, as: Message
-  alias ExIRCd.Client.ConnServer.User, as: User
+  alias ExIRCd.Client.User, as: User
   alias ExIRCd.Client.Command, as: Command
   alias ExIRCd.Client.Response, as: Response
 

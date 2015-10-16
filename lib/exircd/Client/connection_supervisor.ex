@@ -27,10 +27,11 @@ defmodule ExIRCd.Client.ConnSup do
     Agent.update(agent, fn map -> Dict.put(map, :conn, conn) end)
     s = self()
     Agent.update(agent, fn map -> Dict.put(map, :sup, s) end)
+    Agent.update(agent, fn map -> Dict.put(map, :user, %ExIRCd.Client.User{}) end)
 
     # TODO: Set this via configuration options
     alias ExIRCd.Client.Command, as: Cmd
-    cmds = [Cmd.User, Cmd.Nick]
+    cmds = [Cmd.User, Cmd.Nick, Cmd.PrivMsg]
     Agent.update(agent, fn map -> Dict.put(map, :commands, cmds) end)
     children = [
       worker(ExIRCd.Client.ConnServer, [agent], restart: :transient),

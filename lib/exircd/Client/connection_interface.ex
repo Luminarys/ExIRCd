@@ -39,6 +39,8 @@ defmodule ExIRCd.Client.ConnInterface do
   Handle a call from another client.
   """
   def handle_call({:client_msg, message}, _from, {agent}) do
+    %{:server => server} = Agent.get(agent, fn map -> map end)
+    :ok = GenServer.call server, {:send, message}
     {:reply, :ok, {agent}}
   end
 
@@ -51,9 +53,20 @@ defmodule ExIRCd.Client.ConnInterface do
   end
 
   @doc """
+  Handle a cast from the super server.
+  """
+  def handle_cast({:super_server_msg, message}, {agent}) do
+    %{:server => server} = Agent.get(agent, fn map -> map end)
+    :ok = GenServer.cast server, {:send, message}
+    {:noreply, {agent}}
+  end
+
+  @doc """
   Handle a cast from another client.
   """
-  def handle_cast({:client_msg, message}, _from, {agent}) do
+  def handle_cast({:client_msg, message}, {agent}) do
+    %{:server => server} = Agent.get(agent, fn map -> map end)
+    :ok = GenServer.cast server, {:send, message}
     {:noreply, {agent}}
   end
 

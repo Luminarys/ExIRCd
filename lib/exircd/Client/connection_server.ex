@@ -11,10 +11,6 @@ defmodule ExIRCd.Client.ConnServer do
   alias ExIRCd.Client.Message, as: Message
   alias ExIRCd.Client.MessageParser, as: MessageParser
 
-  defmodule User do
-    defstruct user: "", nick: "", name: "", rdns: "", ip: "", modes: [] ,channels: [], registered: false
-  end
-
   @doc """
   Starts the connection server using the given agent.
   """
@@ -32,7 +28,6 @@ defmodule ExIRCd.Client.ConnServer do
     Logger.log :debug, "Connection server initialized"
     s = self()
     Agent.update(agent, fn map -> Dict.put(map, :server, s) end)
-    Agent.update(agent, fn map -> Dict.put(map, :user, %User{}) end)
     {:ok, {agent}}
   end
 
@@ -67,7 +62,7 @@ defmodule ExIRCd.Client.ConnServer do
   Handles a received message from the connection handler.
   The message is parsed into the proper struct and then handled.
   """
-  def handle_call({:recv, raw_message}, {agent}) do
+  def handle_cast({:recv, raw_message}, {agent}) do
     require Pipe
 
     Pipe.pipe_matching {:ok, _},
@@ -81,10 +76,10 @@ defmodule ExIRCd.Client.ConnServer do
   Handles a received message from the connection interfaces,
   sending it to the handler for transmission to the client.
   """
-  def handle_call({:send, message}, {agent}) do
+  def handle_cast({:send, message}, {agent}) do
     %{:handler => handler} = Agent.get(agent, fn map -> map end)
-    :ok = GenServer.call(handler, {:send, MessageParser.parse_message_to_raw(message)})
-    {:reply, :ok, {agent}}
+    :ok = GenServer.cast(handler, {:send, MessageParser.parse_message_to_raw(message)})
+    {:noreply, {agent}}
   end
 
   @doc """
@@ -95,7 +90,7 @@ defmodule ExIRCd.Client.ConnServer do
     raw_message = MessageParser.parse_message_to_raw(%Message{command: "ERROR", args: [":Closing Link:", user.rdns, "(#{reason})"]})
     :ok = GenServer.call(handler, {:send, raw_message})
     ExIRCd.ConnSuperSup.close_connection sup
-    {:noreply, {agent}}
+    {:reply, :ok, {agent}}
   end
 
   @doc """
@@ -133,11 +128,11 @@ defmodule ExIRCd.Client.ConnServer do
   defp execute_command({:ok, {parser, message, agent}}) do
     case parser.(message, agent) do
       {:ok, nil} ->
-        {:reply, :ok, {agent}}
+        {:noreply, {agent}}
       {:error, errMsg} ->
         %{:handler => handler} = Agent.get(agent, fn map -> map end)
-        :ok = GenServer.call(handler, {:send, MessageParser.parse_message_to_raw(errMsg)})
-        {:reply, :ok, {agent}}
+        GenServer.cast(handler, {:send, MessageParser.parse_message_to_raw(errMsg)})
+        {:noreply, {agent}}
     end
   end
 end

@@ -4,45 +4,82 @@ defmodule ExIRCd.Client.Response.Err do
   """
   alias ExIRCd.Client.Message, as: Message
 
+  @name hd(tl(String.split(to_string(Node.self), "@")))
+
+  @doc """
+  ERR_NOSUCHNICK response.
+  """
+  def e401(recip) do
+    %Message{prefix: @name, command: "401", args: [recip], trailing: "No such nick/channel"}
+  end
+
+  @doc """
+  ERR_CANNOTSENDTOCHAN response.
+  """
+  def e404(chan) do
+    %Message{prefix: @name, command: "404", args: [chan], trailing: "Cannot send to channel"}
+  end
+
+  @doc """
+  ERR_NORECIPIENT response.
+  """
+  def e411() do
+    %Message{prefix: @name, command: "412", args: [], trailing: "No recipient given"}
+  end
+
+  @doc """
+  ERR_NOTEXTOSEND response.
+  """
+  def e412() do
+    %Message{prefix: @name, command: "412", args: [], trailing: "No text to send"}
+  end
+
   @doc """
   ERR_NEEDNONICKNAMEGIVEN response.
   """
   def e431() do
-    %Message{prefix: "", command: "461", args: ["*"], trailing: "No nickname given"}
+    %Message{prefix: @name, command: "431", args: ["*"], trailing: "No nickname given"}
   end
 
   @doc """
   ERR_ERRONEUSNICKNAME response.
   """
   def e432(nick) do
-    %Message{prefix: "", command: "461", args: ["*", nick], trailing: "Erroneous nickname"}
+    %Message{prefix: @name, command: "432", args: ["*", nick], trailing: "Erroneous nickname"}
   end
 
   @doc """
   ERR_NICKNAMEINUSE response.
   """
   def e433(nick) do
-    %Message{prefix: "", command: "461", args: ["*", nick], trailing: "Nickname is already in use."}
+    %Message{prefix: @name, command: "433", args: ["*", nick], trailing: "Nickname is already in use."}
+  end
+
+  @doc """
+  ERR_NOTREGISTERED response.
+  """
+  def e451() do
+    %Message{prefix: @name, command: "451", args: ["*"], trailing: "Register first."}
   end
 
   @doc """
   ERR_NEEDMOREPARAMS response.
   """
   def e461(reason) do
-    %Message{prefix: "", command: "461", args: ["*","USER"], trailing: reason}
+    %Message{prefix: @name, command: "461", args: ["*","USER"], trailing: reason}
   end
 
   @doc """
   ERR_ALREADYREGISTRED response.
   """
   def e462(reason) do
-    %Message{prefix: "", command: "462", args: ["*","USER"], trailing: reason}
+    %Message{prefix: @name, command: "462", args: ["*","USER"], trailing: reason}
   end
 
   @doc """
   ERR_RESTRICTED response.
   """
   def e484() do
-    %Message{prefix: "", command: "461", args: ["*"], trailing: "Your connection is restricted!"}
+    %Message{prefix: @name, command: "484", args: ["*"], trailing: "Your connection is restricted!"}
   end
 end
