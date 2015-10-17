@@ -59,6 +59,17 @@ defmodule ExIRCd.Client.ConnServer do
   end
 
   @doc """
+  Handles a received message from the connection interfaces,
+  sending it to the handler for transmission to the client.
+  """
+  def handle_call({:send, message}, _from, {agent}) do
+    %{:handler => handler} = Agent.get(agent, fn map -> map end)
+    :ok = GenServer.call(handler, {:send, MessageParser.parse_message_to_raw(message)})
+    {:reply, :ok, {agent}}
+  end
+
+
+  @doc """
   Handles a received message from the connection handler.
   The message is parsed into the proper struct and then handled.
   """
@@ -87,6 +98,7 @@ defmodule ExIRCd.Client.ConnServer do
   """
   def handle_cast({:close_conn, reason}, {agent}) do
     %{:sup => sup, :handler => handler, :user => user} = Agent.get(agent, fn map -> map end)
+    GenServer.call ExIRCd.SuperServer.Server, {:remove_client, user.nick, user.channels}
     raw_message = MessageParser.parse_message_to_raw(%Message{command: "ERROR", args: [":Closing Link:", user.rdns, "(#{reason})"]})
     :ok = GenServer.call(handler, {:send, raw_message})
     ExIRCd.ConnSuperSup.close_connection sup
@@ -98,7 +110,13 @@ defmodule ExIRCd.Client.ConnServer do
   supervisor and children be terminated.
   """
   def handle_info({:socket_closed}, {agent}) do
-    %{:sup => sup} = Agent.get(agent, fn map -> map end)
+    %{:sup => sup, :user => user} = Agent.get(agent, fn map -> map end)
+    #  :meme!~me@Rizon-B96C31FC.dhcp.stls.mo.charter.com QUIT :Remote host closed the connection
+    GenServer.call ExIRCd.SuperServer.Server, {:remove_client, user.nick, user.channels}
+    prefix = "#{user.nick}!#{user.user}@#{user.rdns}"
+    quit_msg = %Message{prefix: prefix, command: "QUIT", args: [], trailing: "Remote host closed the connection"}
+    for chan <- user.channels,
+    do: GenServer.call ExIRCd.SuperServer.Server, {:send_to_chan, chan, quit_msg, user.nick}
     ExIRCd.ConnSuperSup.close_connection sup
     {:noreply, {agent}}
   end

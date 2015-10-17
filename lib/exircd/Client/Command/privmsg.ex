@@ -19,8 +19,7 @@ defmodule ExIRCd.Client.Command.PrivMsg do
     {:ok, {message, user}}
     |> check_registration
     |> check_args
-    |> check_recipient(user.nick)
-    |> send_message
+    |> send_message(user.nick)
   end
 
   defp check_registration({:ok, {message, user}}) do
@@ -43,29 +42,17 @@ defmodule ExIRCd.Client.Command.PrivMsg do
     end
   end
 
-  defp check_recipient({:ok, {recip, message}}, nick) do
+  defp send_message({:ok, {recip, message}}, nick) do
     # TODO: Check other servers
     case {:ets.lookup(:clients, recip), :ets.lookup(:channels, recip)} do
       {[], []} -> {:error, Response.Err.e401(recip)}
-      {[{^recip, client}], []} -> {:ok, {[client], message}}
-      {[], [{^recip, channel}]} ->
-        case :ets.lookup(channel, nick) do
-          [] -> {:error, Response.Err.e404(recip)}
-          _ ->
-            clients = :ets.foldl(fn {client, pid}, pids ->
-              case client do
-                ^nick -> pids
-                _ -> [pid|pids]
-              end
-            end, [], channel)
-            {:ok, {[clients], message}}
-        end
+      {[{^recip, client}], []} -> 
+        GenServer.cast(client, {:client_msg, message})
+        {:ok, nil}
+      {[], [{^recip, _channel}]} ->
+        GenServer.call ExIRCd.SuperServer.Server, {:send_to_chan, recip, message, nick}
+        {:ok, nil}
     end
-  end
-
-  defp send_message({:ok, {recips, message}}) do
-    for recip <- recips, do: GenServer.cast(recip, {:client_msg, message})
-    {:ok, nil}
   end
 end
 

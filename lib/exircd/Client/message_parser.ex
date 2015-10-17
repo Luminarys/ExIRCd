@@ -54,18 +54,34 @@ defmodule ExIRCd.Client.MessageParser do
   @doc """
   Converts an IRC message into a string to be sent to a client.
   """
-  def parse_message_to_raw(%Message{prefix: "", command: command, args: arg_list, trailing: trailing}) do
-    # host = "ExIRCd@localhost"
-    case trailing do
-      "" -> "#{command} #{Enum.join(arg_list, " ")}\r\n"
-      _ -> "#{command} #{Enum.join(arg_list, " ")} :#{trailing}\r\n"
+  def parse_message_to_raw(message) do
+    message
+    |> add_prefix
+    |> add_args
+    |> add_trailing
+  end
+
+  defp add_prefix(message) do
+    %Message{prefix: prefix, command: command} = message
+    case prefix do
+      "" -> {"#{command} ", message}
+      _ -> {":#{prefix} #{command} ", message}
     end
   end
-  def parse_message_to_raw(%Message{prefix: prefix, command: command, args: arg_list, trailing: trailing}) do
-    # host = "ExIRCd@localhost"
+
+  defp add_args({raw, message}) do
+    %Message{args: args} = message
+    case args do
+      [] -> {raw, message}
+      _ -> {"#{raw}#{Enum.join(args, " ")} ", message}
+    end
+  end
+
+  defp add_trailing({raw, message}) do
+    %Message{trailing: trailing} = message
     case trailing do
-      "" -> ":#{prefix} #{command} #{Enum.join(arg_list, " ")}\r\n"
-      _ -> ":#{prefix} #{command} #{Enum.join(arg_list, " ")} :#{trailing}\r\n"
+      "" -> "#{raw}\r\n"
+      _ -> "#{raw}:#{trailing}\r\n"
     end
   end
 end

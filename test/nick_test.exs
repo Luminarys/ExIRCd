@@ -6,7 +6,7 @@ defmodule NickCommandTest do
   alias ExIRCd.Client.Response, as: Response
 
   test "No nick given" do
-    {:ok, agent} = Agent.start_link fn -> %{} end
+    {:ok, agent} = Agent.start_link fn -> %{:interface => self()} end
     user = %User{}
     Agent.update(agent, fn map -> Dict.put(map, :user, user) end)
     message = %Message{args: [], command: "NICK"}

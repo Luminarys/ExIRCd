@@ -30,6 +30,7 @@ defmodule ExIRCd.Client.ConnHandler do
   """
   def handle_call({:send, message}, _from, {agent}) do
     %{:conn => conn} = Agent.get(agent, fn map -> map end)
+    Logger.log :debug, "Synchronously message: #{String.rstrip message}"
     Socket.Stream.send! conn, message
     {:reply, :ok, {agent}}
   end
@@ -40,6 +41,7 @@ defmodule ExIRCd.Client.ConnHandler do
   """
   def handle_cast({:send, message}, {agent}) do
     %{:conn => conn} = Agent.get(agent, fn map -> map end)
+    Logger.log :debug, "Asynchronously message: #{String.rstrip message}"
     Socket.Stream.send! conn, message
     {:noreply, {agent}}
   end

@@ -31,8 +31,9 @@ defmodule ExIRCd.SuperServer.Server do
   @doc """
   Removes a registered connection from the clients table
   """
-  def handle_call({:remove_client, nick}, _from, {clients, channels}) do
+  def handle_call({:remove_client, nick, chans}, _from, {clients, channels}) do
     :ets.delete(clients, nick)
+    for chan <- chans, do: leave_chan(nick, chan, channels)
     {:reply, :ok, {clients, channels}}
   end
 
@@ -64,6 +65,7 @@ defmodule ExIRCd.SuperServer.Server do
       end
     end, :ok, channels)
     :ets.delete(clients, old_nick)
+    {:reply, :ok, {clients, channels}}
   end
 
   @doc """
@@ -87,35 +89,43 @@ defmodule ExIRCd.SuperServer.Server do
   empty channels.
   """
   def handle_call({:leave_chan, nick, chan}, _from, {clients, channels}) do
+    {:reply, leave_chan(nick, chan, channels), {clients, channels}}
+  end
+
+  @doc """
+  Broadcasts a message to all clients in a channel.
+  """
+  def handle_call({:send_to_chan, chan, message, sender}, _from, {clients, channels}) do
+    send_to_chan(chan, message, channels, sender)
+    {:reply, :ok, {clients, channels}}
+  end
+
+  defp leave_chan(nick, chan, channels) do
     case :ets.lookup(channels, chan) do
       [{^chan, channel}] ->
         :ets.delete(channel, nick)
         case :ets.last(channel) do
           :"$end_of_table" ->
             :ets.delete(channels, chan)
-            {:reply, :ok, {clients, channels}}
+            :ok
           _ ->
-            {:reply, :ok, {clients, channels}}
+            :ok
         end
       [] ->
-        {:reply, :error, {clients, channels}}
+        :error
     end
   end
 
-  @doc """
-  Broadcasts a message to all clients in a channel.
-  """
-  def handle_call({:send_to_chan, chan, message}, _from, {clients, channels}) do
-    send_to_chan(chan, message, channels)
-    {:reply, :ok, {clients, channels}}
-  end
-
-  defp send_to_chan(chan, message, channels) do
-    [{^chan, channel}] = :ets.lookup(channels, chan)
-    :ets.foldl(fn {nick, pid}, _acc ->
-      if nick != message.nick do
-        GenServer.call(pid, {:super_server_msg, message})
-      end
-    end, :ok, channel)
+  defp send_to_chan(chan, message, channels, sender) do
+    case :ets.lookup(channels, chan) do
+      [{^chan, channel}] ->
+        :ets.foldl(fn {nick, pid}, _acc ->
+          if nick != sender do
+            GenServer.cast(pid, {:super_server_msg, message})
+          end
+        end, :ok, channel)
+        :ok
+      [] -> :ok
+    end
   end
 end
