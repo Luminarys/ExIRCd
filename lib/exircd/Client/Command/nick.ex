@@ -1,6 +1,7 @@
 defmodule ExIRCd.Client.Command.Nick do
   @behaviour ExIRCd.Client.Command
   alias ExIRCd.Client.Message, as: Message
+  alias ExIRCd.Client.MessageParser, as: MessageParser
   alias ExIRCd.Client.Response, as: Response
   @moduledoc """
   Parses out the NICK message.
@@ -20,7 +21,7 @@ defmodule ExIRCd.Client.Command.Nick do
     |> check_restriction
     |> check_valid
     |> check_available
-    |> update_registration
+    |> update_registration(agent)
     |> set_nick(agent)
     |> broadcast_change(message, interface)
   end
@@ -63,10 +64,16 @@ defmodule ExIRCd.Client.Command.Nick do
     end
   end
 
-  defp update_registration({:ok, {nick, user}}) do
+  defp update_registration({:ok, {nick, user}}, agent) do
     case user.user do
       "" -> {:ok, {nick, user}}
-      _ -> {:ok, {nick, %{user| registered: true}}}
+      _ -> 
+        %{:handler => handler, :user => user} = Agent.get(agent, fn map -> map end)
+        GenServer.cast(handler, {:send, MessageParser.parse_message_to_raw(Response.Repl.r001(%{user| nick: nick}))})
+        GenServer.cast(handler, {:send, MessageParser.parse_message_to_raw(Response.Repl.r002(nick))})
+        GenServer.cast(handler, {:send, MessageParser.parse_message_to_raw(Response.Repl.r003(nick))})
+        GenServer.cast(handler, {:send, MessageParser.parse_message_to_raw(Response.Repl.r004(nick))})
+        {:ok, {nick, %{user| registered: true}}}
     end
   end
 

@@ -1,6 +1,7 @@
 defmodule ExIRCd.Client.Command.User do
   @behaviour ExIRCd.Client.Command
   alias ExIRCd.Client.Message, as: Message
+  alias ExIRCd.Client.MessageParser, as: MessageParser
   alias ExIRCd.Client.Response, as: Response
   @moduledoc """
   Parses out the USER message setting user, name, and modes accordingly.
@@ -19,7 +20,7 @@ defmodule ExIRCd.Client.Command.User do
     |> check_registration
     |> check_args
     |> apply_mask
-    |> update_registration
+    |> update_registration(agent)
     |> update_user(agent)
   end
 
@@ -59,10 +60,16 @@ defmodule ExIRCd.Client.Command.User do
     end
   end
 
-  defp update_registration({:ok, user}) do
+  defp update_registration({:ok, user}, agent) do
     case user.nick do
       "" -> {:ok, user}
-      _ -> {:ok, %{user| registered: true}}
+      _ -> 
+        %{:handler => handler, :user => user} = Agent.get(agent, fn map -> map end)
+        GenServer.cast(handler, {:send, MessageParser.parse_message_to_raw(Response.Repl.r001(user))})
+        GenServer.cast(handler, {:send, MessageParser.parse_message_to_raw(Response.Repl.r002(user.nick))})
+        GenServer.cast(handler, {:send, MessageParser.parse_message_to_raw(Response.Repl.r003(user.nick))})
+        GenServer.cast(handler, {:send, MessageParser.parse_message_to_raw(Response.Repl.r004(user.nick))})
+        {:ok, %{user| registered: true}}
     end
   end
 

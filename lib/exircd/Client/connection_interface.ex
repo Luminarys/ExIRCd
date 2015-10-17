@@ -1,4 +1,5 @@
 defmodule ExIRCd.Client.ConnInterface do
+  alias ExIRCd.Client.MessageParser, as: MessageParser
   @moduledoc """
   The connection interface acts as an external interface for communication
   with other processes. It relays messages from the an external source to
@@ -24,6 +25,15 @@ defmodule ExIRCd.Client.ConnInterface do
   def init([agent]) do
     send self(), {:ready}
     {:ok, {agent}}
+  end
+
+  @doc """
+  Send a direct message to the handler, bypassing the server.
+  """
+  def handle_call({:dmsg, message}, _from, {agent}) do
+    %{:handler => handler} = Agent.get(agent, fn map -> map end)
+    :ok = GenServer.call(handler, {:send, MessageParser.parse_message_to_raw(message)})
+    {:reply, :ok, {agent}}
   end
 
   @doc """

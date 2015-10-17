@@ -113,7 +113,8 @@ defmodule ExIRCd.Client.Command.Join do
     prefix = "#{user.nick}!#{user.user}@#{user.rdns}"
     joinmsg = %Message{prefix: prefix, command: "JOIN", trailing: chan}
     GenServer.call ExIRCd.SuperServer.Server, {:join_chan, {user.nick, interface}, chan}
-    GenServer.call ExIRCd.SuperServer.Server, {:send_to_chan, chan, joinmsg, ""}
+    GenServer.call ExIRCd.SuperServer.Server, {:send_to_chan, chan, joinmsg, user.nick}
+    GenServer.call interface, {:dmsg, joinmsg}
     {:ok, {chan, agent}}
   end
 
@@ -135,9 +136,9 @@ defmodule ExIRCd.Client.Command.Join do
 
     for name_list <- name_lists, do: send_name_repl(name_list, chan, user.nick, handler)
 
-    name_end_msg = Response.Repl.r366(chan)
+    name_end_msg = Response.Repl.r366(user.nick, chan)
     |> MessageParser.parse_message_to_raw
-    GenServer.call(handler, {:send, name_end_msg})
+    GenServer.cast(handler, {:send, name_end_msg})
 
     {:ok, nil}
   end
@@ -154,6 +155,6 @@ defmodule ExIRCd.Client.Command.Join do
     msg = Response.Repl.r353(user_nick, "=", chan, names)
     |> MessageParser.parse_message_to_raw
 
-    GenServer.call(handler, {:send, msg})
+    GenServer.cast(handler, {:send, msg})
   end
 end
