@@ -17,38 +17,52 @@ defmodule ExIRCd.Client.MessageParser do
   @doc """
   Converts a raw string into an IRC message.
   """
-  def parse_raw_to_message(string, user) do
+  def parse_raw_to_message(raw, user) do
+    require Pipe
     try do
-      case String.ends_with? string, "\r\n" do
-        true ->
-          case String.starts_with? string, ":" do
-            true ->
-              [":" <> _prefix, cargs] = String.split(string, " ", parts: 2)
-              parse_clean_to_message(cargs, user)
-            false ->
-              parse_clean_to_message(string, user)
-          end
-        false ->
-          {:error, :improper_ending}
-      end
+      Pipe.pipe_matching val, {:ok, val},
+      {:ok, {raw, user}}
+      |> check_clrf
+      |> remove_prefix
+      |> get_args_and_trailing
+      |> make_message
     rescue
       _ in MatchError -> {:error, :failed_to_match}
     end
   end
 
-  defp parse_clean_to_message(cargs, user) do
-    case String.contains? cargs, ":" do
-      true ->
-        [cargs, trailing] = String.split(String.rstrip(cargs), " :", parts: 2)
-        [command|arg_list] = String.split(cargs)
-        prefix = "#{user.nick}!#{user.user}@#{user.rdns}"
-        {:ok, %Message{prefix: prefix, command: command, args: arg_list, trailing: trailing}}
+  defp check_clrf({raw, user}) do
+      case String.ends_with? raw, "\r\n" do
+        true -> {:ok, {String.rstrip(raw), user}}
+        false -> {:error, :improper_ending}
+      end
+  end
 
+  defp remove_prefix({raw, user}) do
+    case String.starts_with? raw, ":" do
+      true ->
+        [":" <> _prefix, rest] = String.split(raw, " ", parts: 2)
+        {:ok, {rest, user}}
       false ->
-        [command|arg_list] = String.split(String.rstrip(cargs))
-        prefix = "#{user.nick}!#{user.user}@#{user.rdns}"
-        {:ok, %Message{prefix: prefix, command: command, args: arg_list}}
+        {:ok, {raw, user}}
     end
+  end
+
+  defp get_args_and_trailing({raw, user}) do
+    case String.contains? raw, ":" do
+      true ->
+        [args, trailing] = String.split(String.rstrip(raw), " :", parts: 2)
+        [command|arg_list] = String.split(args)
+        {:ok, {command, arg_list, trailing, user}}
+      false ->
+        [command|arg_list] = String.split(String.rstrip(raw))
+        {:ok, {command, arg_list, "", user}}
+    end
+  end
+
+  defp make_message({command, arg_list, trailing, user}) do
+    prefix = "#{user.nick}!#{user.user}@#{user.rdns}"
+    {:ok, %Message{prefix: prefix, command: command, args: arg_list, trailing: trailing}}
   end
 
   @doc """
@@ -63,25 +77,23 @@ defmodule ExIRCd.Client.MessageParser do
 
   defp add_prefix(message) do
     %Message{prefix: prefix, command: command} = message
-    case prefix do
-      "" -> {"#{command} ", message}
-      _ -> {":#{prefix} #{command} ", message}
+    case message.prefix do
+      "" -> {"#{message.command} ", message}
+      prefix -> {":#{prefix} #{message.command} ", message}
     end
   end
 
   defp add_args({raw, message}) do
-    %Message{args: args} = message
-    case args do
+    case message.args do
       [] -> {raw, message}
-      _ -> {"#{raw}#{Enum.join(args, " ")} ", message}
+      args -> {"#{raw}#{Enum.join(args, " ")} ", message}
     end
   end
 
   defp add_trailing({raw, message}) do
-    %Message{trailing: trailing} = message
-    case trailing do
+    case message.trailing do
       "" -> "#{raw}\r\n"
-      _ -> "#{raw}:#{trailing}\r\n"
+      trailing -> "#{raw}:#{trailing}\r\n"
     end
   end
 end
